@@ -1,3 +1,5 @@
+# An update of ViewCrafter/Waymo finetune.
+
 ## ___***DynamiCrafter: Animating Open-domain Images with Video Diffusion Priors***___
 <!-- ![](./assets/logo_long.png#gh-light-mode-only){: width="50%"} -->
 <!-- ![](./assets/logo_long_dark.png#gh-dark-mode-only=100x20) -->
