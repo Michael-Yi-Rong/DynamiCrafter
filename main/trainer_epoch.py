@@ -39,16 +39,16 @@ def get_nondefault_trainer_args(args):
     default_trainer_args = parser.parse_args([])
     return sorted(k for k in vars(default_trainer_args) if getattr(args, k) != getattr(default_trainer_args, k))
 
-class SaveCheckpointOnEpochMultipleOfTwo(Callback):
+class SaveCheckpointOnEpoch(Callback):
     def __init__(self, checkpoint_dir):
         self.checkpoint_dir = checkpoint_dir
 
     def on_train_epoch_end(self, trainer, pl_module):
         epoch = trainer.current_epoch
-        if trainer.global_rank == 0 and epoch % 2 == 0:  # Check if epoch is a multiple of 2
+        if trainer.global_rank == 0 and (epoch in [0, 2, 50, 100, 500, 1000, 2000, 3000, 5000, 10000]):  # Check if epoch is a multiple of 2
             checkpoint_path = os.path.join(self.checkpoint_dir, f"checkpoint_epoch_{epoch}.ckpt")
             print(f"Saving checkpoint at epoch {epoch}")
-            trainer.save_checkpoint(checkpoint_path)
+            trainer.save_checkpoint(checkpoint_path, weights_only=True)
 
 if __name__ == "__main__":
     now = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
@@ -73,6 +73,7 @@ if __name__ == "__main__":
 
     ## setup workspace directories
     workdir, ckptdir, cfgdir, loginfo = init_workspace(args.name, args.logdir, config, lightning_config, global_rank)
+    ckptdir = f"/home/aita/DynamiCrafter/train_outputs/waymo_train_512_lidaronly/checkpoints" ###############
     logger = set_logger(logfile=os.path.join(loginfo, 'log_%d:%s.txt'%(global_rank, now)))
     logger.info("@lightning version: %s [>=1.8 required]"%(pl.__version__))  
 
@@ -130,8 +131,8 @@ if __name__ == "__main__":
     trainer_kwargs["callbacks"] = [instantiate_from_config(callbacks_cfg[k]) for k in callbacks_cfg]
 
     ###
-    save_checkpoint_callback = SaveCheckpointOnEpochMultipleOfTwo(ckptdir)
-    trainer_kwargs["callbacks"].append(save_checkpoint_callback)  # **Adding custom callback here**
+    # save_checkpoint_callback = SaveCheckpointOnEpoch(ckptdir)
+    # trainer_kwargs["callbacks"].append(save_checkpoint_callback)  # **Adding custom callback here**
     ###
 
     strategy_cfg = get_trainer_strategy(lightning_config)
@@ -145,6 +146,7 @@ if __name__ == "__main__":
     trainer = Trainer.from_argparse_args(trainer_args, **trainer_kwargs)
 
     print(f"TRAINING KWARGS", trainer_kwargs)
+    print(f"CKPTDIR:", ckptdir)
 
     ## allow checkpointing via USR1
     def melk(*args, **kwargs):
